@@ -1,0 +1,13 @@
+#editor {
+    height: 300px;
+    background: #fff;
+}
+
+.shape {
+    display: inline-block;
+    margin: 5px;
+}
+
+.draggable {
+    cursor: grab;
+}
