@@ -6,6 +6,13 @@
     <title>Maximo Editor</title>
     <link rel="stylesheet" href="src/style.css">
     <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=PT+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        .ql-snow .ql-picker.ql-font {
+            width: 160px !important;
+        }
+    </style>
 </head>
 <body>
 <div id="toolbar">
@@ -16,7 +23,12 @@
         <button class="ql-strike"></button>
     </span>
     <span class="ql-formats">
-        <select class="ql-font"></select>
+        <select class="ql-font">
+            <option value="arial" selected>Arial</option>
+            <option value="times-new-roman">Times New Roman</option>
+            <option value="courier-new">Courier New</option>
+            <option value="pt-mono">PT Mono</option>
+        </select>
         <select class="ql-size">
             <option value="8px">8px</option>
             <option value="10px">10px</option>

@@ -8,7 +8,7 @@ const BlockEmbed = Quill.import('blots/block/embed');
 class SvgBlot extends BlockEmbed {
     static create(value) {
         let node = super.create();
-        node.innerHTML = value; // сохраняем SVG внутри элемента
+        node.innerHTML = value;
         return node;
     }
     static value(node) {
@@ -16,16 +16,23 @@ class SvgBlot extends BlockEmbed {
     }
 }
 SvgBlot.blotName = 'svg';
-SvgBlot.tagName = 'div'; // можно использовать любой подходящий тег, например, <div>
-Quill.register(SvgBlot);
+SvgBlot.tagName = 'div';
+
 
 // Настройка допустимых значений размера шрифта
 let SizeStyle = Quill.import("attributors/style/size");
 SizeStyle.whitelist = ["8px", "10px", "12px", "14px", "16px", "18px", "24px", "36px", "48px", "72px", "100px"];
 
+// Настройка допустимых шрифтов
+const Font = Quill.import("attributors/class/font");
+Font.whitelist = ["arial", "times-new-roman", "courier-new", "pt-mono"];
+
+
+Quill.register(Font, true);
 Quill.register("modules/tableWidget", Widget);
 Quill.register(SizeStyle, true);
 Quill.register("modules/imageResize", ImageResize);
+Quill.register(SvgBlot);
 
 // Инициализация редактора Quill
 const quill = new Quill("#editor", {
@@ -48,19 +55,7 @@ const quill = new Quill("#editor", {
     }
 });
 
-// Функция для логирования HTML-кода редактора
-function logContent() {
-    console.log("HTML-код:", quill.root.innerHTML);
-    window.parent.postMessage(quill.root.innerHTML, "*");
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(translateDropdowns, 500); // Даем время на отрисовку
-});
-
-quill.on("text-change", logContent);
-
-function insertShape(type) {
+const insertShape = (type) => {
     let svg = "";
 
     if (type === "arrow") {
@@ -82,10 +77,19 @@ function insertShape(type) {
     quill.insertEmbed(index, 'svg', svg, 'user');
 }
 
+const sendDataToMaximo = () => {
+    const editorContent = quill.root.innerHTML
+    window.parent.postMessage({ action: "updateDescription", content: editorContent }, "*");
+}
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(translateDropdowns, 500); // Даем время на отрисовку
     document.getElementById("insert-arrow")?.addEventListener("click", () => insertShape("arrow"));
     document.getElementById("insert-circle")?.addEventListener("click", () => insertShape("circle"));
     document.getElementById("insert-rectangle")?.addEventListener("click", () => insertShape("rectangle"));
 });
 
+
+quill.on("text-change", function() {
+    sendDataToMaximo();
+});
