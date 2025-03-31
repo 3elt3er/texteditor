@@ -1,14 +1,11 @@
-# Игнорирование папок
 .idea/
 dist/
 node_modules/
 
-# Игнорирование логов и временных файлов
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Исключение окружений и кеша
 .env
 .DS_Store
