@@ -1,7 +1,7 @@
 {
   "name": "maximo-editor",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,13 +12,10 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "^0.18.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "fabric": "^6.6.1",
     "quill": "^2.0.3",
     "quill-image-resize": "^3.0.9",
-    "quill-image-resize-module": "^3.0.0",
     "quill-table-widget": "^1.0.4"
   }
 }
