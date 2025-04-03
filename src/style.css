@@ -24,3 +24,7 @@
 .ql-font-pt-mono {
     font-family: "PT Mono", monospace;
 }
+
+#wi-tooltip-header {
+    display: none !important;
+}
