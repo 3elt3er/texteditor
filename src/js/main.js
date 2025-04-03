@@ -16,7 +16,6 @@ Quill.register("modules/tableWidget", Widget);
 Quill.register(SizeStyle, true);
 Quill.register("modules/imageResize", ImageResize);
 
-// Инициализация редактора
 const quill = new Quill("#editor", {
     theme: "snow",
     modules: {
@@ -30,13 +29,12 @@ const quill = new Quill("#editor", {
     }
 });
 
-// Настройки интерфейса
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
     setupDropDownLocalization();
     setupTableFunctions(quill);
 });
 
-export let activeCell = null;
+let activeCell = null;
 
 document.addEventListener("click", (event) => {
     if (event.target.tagName === "TD") {
@@ -46,7 +44,9 @@ document.addEventListener("click", (event) => {
     }
 });
 
-// Подключаем отправку данных
-quill.on("text-change", function () {
+// Функция для получения активной ячейки
+export const getActiveCell = () => activeCell;
+
+quill.on("text-change", () => {
     sendDataToMaximo(quill.root.innerHTML);
 });

@@ -1,5 +1,5 @@
 import { sendDataToMaximo } from "./maximo.js";
-import { activeCell } from "./main.js";
+import { getActiveCell } from "./main.js";
 
 export const setupDropDownLocalization = () => {
     const translations = {
@@ -11,60 +11,48 @@ export const setupDropDownLocalization = () => {
     };
 
     document.querySelectorAll(".wi-menu div").forEach((el) => {
-        el.innerHTML = translations[el.innerHTML] || el.innerHTML;
-        el.addEventListener("click", () => {
-            updateTableBorders()
-        })
+        el.textContent = translations[el.textContent] || el.textContent;
+        el.addEventListener("click", updateTableBorders);
     });
 };
 
 export const setupTableFunctions = (quillInstance) => {
     const menu = document.querySelector(".wi-menu");
 
-    const increaseButton = createButton("Увеличить толщину рамок", () => changeBorderWidth(1, quillInstance));
-    const decreaseButton = createButton("Уменьшить толщину рамок", () => changeBorderWidth(-1, quillInstance));
+    const buttons = [
+        { text: "Увеличить толщину рамок", action: () => changeBorderWidth(1, quillInstance) },
+        { text: "Уменьшить толщину рамок", action: () => changeBorderWidth(-1, quillInstance) },
+        { text: "Объединить с нижней", action: () => mergeCells("down", quillInstance) },
+        { text: "Объединить с правой", action: () => mergeCells("right", quillInstance) }
+    ];
 
-    const mergeDownButton = createButton("Объединить с нижней", () => mergeWithBottom(quillInstance));
-    const mergeRightButton = createButton("Объединить с правой", () => mergeWithRight(quillInstance));
-
-    menu.appendChild(increaseButton);
-    menu.appendChild(decreaseButton);
-    menu.appendChild(mergeDownButton);
-    menu.appendChild(mergeRightButton);
+    buttons.forEach(({ text, action }) => menu.appendChild(createButton(text, action)));
 };
 
-const mergeWithBottom = (quillInstance) => {
+const mergeCells = (direction, quillInstance) => {
+    const activeCell = getActiveCell();
     if (!activeCell) return;
 
-    let row = activeCell.parentElement;
-    let nextRow = row.nextElementSibling;
-    if (!nextRow) return; // Нет нижней строки
+    let targetCell = direction === "down"
+        ? activeCell.parentElement?.nextElementSibling?.cells[activeCell.cellIndex]
+        : activeCell.nextElementSibling;
 
-    let bottomCell = nextRow.cells[activeCell.cellIndex];
-    if (!bottomCell) return;
+    if (!targetCell) return;
 
-    activeCell.rowSpan = (activeCell.rowSpan || 1) + (bottomCell.rowSpan || 1);
-    bottomCell.style.display = "none"; // Скрываем нижнюю ячейку
+    if (direction === "down") {
+        activeCell.rowSpan += targetCell.rowSpan || 1;
+    } else {
+        activeCell.colSpan += targetCell.colSpan || 1;
+    }
 
+    targetCell.style.display = "none";
     sendDataToMaximo(quillInstance.root.innerHTML);
 };
-
-const mergeWithRight = (quillInstance) => {
-    if (!activeCell) return;
-
-    let rightCell = activeCell.nextElementSibling;
-    if (!rightCell) return; // Нет правой ячейки
-
-    activeCell.colSpan = (activeCell.colSpan || 1) + (rightCell.colSpan || 1);
-    rightCell.style.display = "none"; // Скрываем правую ячейку
-    sendDataToMaximo(quillInstance.root.innerHTML);
-};
-
 
 // Функция создания кнопки
 const createButton = (text, action) => {
     const button = document.createElement("div");
-    button.innerText = text;
+    button.textContent = text;
     button.classList.add("menu-item");
     button.addEventListener("click", action);
     return button;
@@ -74,27 +62,15 @@ const createButton = (text, action) => {
 let borderWidth = 1;
 
 const changeBorderWidth = (arg, quillInstance) => {
-    switch (arg) {
-        case 1:
-            if (borderWidth < 10) {
-                borderWidth++;
-            }
-            break;
-        case -1:
-            if (borderWidth > 0) {
-                borderWidth--;
-            } 
-            break;
-    }
+    if (arg === 1 && borderWidth < 10) borderWidth++;
+    if (arg === -1 && borderWidth > 0) borderWidth--;
+
     updateTableBorders();
     sendDataToMaximo(quillInstance.root.innerHTML);
-}
-
+};
 
 const updateTableBorders = () => {
     document.querySelectorAll("td, th").forEach((cell) => {
         cell.style.border = `${borderWidth}px solid black`;
     });
 };
-
-
