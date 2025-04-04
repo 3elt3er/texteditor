@@ -23,7 +23,8 @@ export const setupTableFunctions = (quillInstance) => {
         { text: "Увеличить толщину рамок", action: () => changeBorderWidth(1, quillInstance) },
         { text: "Уменьшить толщину рамок", action: () => changeBorderWidth(-1, quillInstance) },
         { text: "Объединить с нижней", action: () => mergeCells("down", quillInstance) },
-        { text: "Объединить с правой", action: () => mergeCells("right", quillInstance) }
+        { text: "Объединить с правой", action: () => mergeCells("right", quillInstance) },
+        { text: "Разъединить", action: () => splitCell(quillInstance) },
     ];
 
     buttons.forEach(({ text, action }) => menu.appendChild(createButton(text, action)));
@@ -33,23 +34,69 @@ const mergeCells = (direction, quillInstance) => {
     const activeCell = getActiveCell();
     if (!activeCell) return;
 
-    let targetCell = direction === "down"
-        ? activeCell.parentElement?.nextElementSibling?.cells[activeCell.cellIndex]
-        : activeCell.nextElementSibling;
+    let targetCell;
+    if (direction === "down") {
+        let nextRow = activeCell.parentElement?.nextElementSibling;
+        while (nextRow) {
+            targetCell = nextRow.cells[activeCell.cellIndex];
+            if (targetCell && targetCell.style.display !== "none") break;
+            nextRow = nextRow.nextElementSibling;
+        }
+    } else {
+        targetCell = activeCell.nextElementSibling;
+        while (targetCell && targetCell.style.display === "none") {
+            targetCell = targetCell.nextElementSibling;
+        }
+    }
 
-    if (!targetCell) return;
+    if (!targetCell || targetCell.style.display === "none") return;
+
+    let activeColspan = activeCell.colSpan || 1;
+    let activeRowspan = activeCell.rowSpan || 1;
+    let targetColspan = targetCell.colSpan || 1;
+    let targetRowspan = targetCell.rowSpan || 1;
 
     if (direction === "down") {
-        activeCell.rowSpan += targetCell.rowSpan || 1;
+        activeCell.rowSpan = activeRowspan + targetRowspan;
     } else {
-        activeCell.colSpan += targetCell.colSpan || 1;
+        activeCell.colSpan = activeColspan + targetColspan;
     }
 
     targetCell.style.display = "none";
+    targetCell.dataset.merged = "true";
+
     sendDataToMaximo(quillInstance.root.innerHTML);
 };
 
-// Функция создания кнопки
+const splitCell = (quillInstance) => {
+    const activeCell = getActiveCell();
+    if (!activeCell) return;
+
+    const colSpan = activeCell.colSpan || 1;
+    const rowSpan = activeCell.rowSpan || 1;
+
+    if (colSpan === 1 && rowSpan === 1) return;
+
+    let rowIndex = activeCell.parentElement.rowIndex;
+    let colIndex = activeCell.cellIndex;
+
+    for (let i = 0; i < rowSpan; i++) {
+        let row = activeCell.parentElement.parentElement.rows[rowIndex + i];
+        for (let j = 0; j < colSpan; j++) {
+            let cell = row.cells[colIndex + j];
+            if (cell && cell.dataset.merged) {
+                cell.style.display = "";
+                delete cell.dataset.merged;
+            }
+        }
+    }
+
+    activeCell.colSpan = 1;
+    activeCell.rowSpan = 1;
+
+    sendDataToMaximo(quillInstance.root.innerHTML);
+};
+
 const createButton = (text, action) => {
     const button = document.createElement("div");
     button.textContent = text;
@@ -58,7 +105,6 @@ const createButton = (text, action) => {
     return button;
 };
 
-// Глобальное хранилище для толщины рамки
 let borderWidth = 1;
 
 const changeBorderWidth = (arg, quillInstance) => {
