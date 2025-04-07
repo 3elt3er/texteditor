@@ -47,6 +47,8 @@ document.addEventListener("click", (event) => {
 // Функция для получения активной ячейки
 export const getActiveCell = () => activeCell;
 
-quill.on("text-change", () => {
-    sendDataToMaximo(quill.root.innerHTML);
-});
+
+setInterval(() => sendDataToMaximo(), 5000)
+// quill.on("text-change", () => {
+//     sendDataToMaximo();
+// });
