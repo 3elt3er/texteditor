@@ -88,9 +88,19 @@ export const inlineStyles = (quillRoot) => {
         cell.style.wordWrap = "break-word";
         cell.style.padding = "2px 5px";
     });
+
+    clone.querySelectorAll("[data-indent]").forEach((el) => {
+      const level = parseInt(el.getAttribute("data-indent"), 10) || 0;
+      el.style.paddingLeft = `${level * 39}px`;
+    });
+
+    clone.querySelectorAll("span[contenteditable='false']").forEach(el => el.remove());
   
     // Преобразуем списки, используя data-indent для создания вложенности
     transformLists(clone);
+    clone.querySelectorAll("[data-indent]").forEach((el) => {
+      el.removeAttribute("data-indent");
+    });
   
     return clone.innerHTML;
   };

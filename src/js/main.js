@@ -48,7 +48,28 @@ document.addEventListener("click", (event) => {
 export const getActiveCell = () => activeCell;
 
 
-setInterval(() => sendDataToMaximo(), 5000)
-// quill.on("text-change", () => {
-//     sendDataToMaximo();
-// });
+let debounceTimer = null;
+let lastInputTime = Date.now();
+let lastSentContent = quill.root.innerHTML;
+
+quill.on('text-change', () => {
+  lastInputTime = Date.now();
+
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+
+  debounceTimer = setTimeout(() => {
+    const now = Date.now();
+    const timeSinceLastInput = now - lastInputTime;
+
+    if (timeSinceLastInput >= 2000) {
+      const currentContent = quill.root.innerHTML;
+
+      if (currentContent !== lastSentContent) {
+        sendDataToMaximo();
+        lastSentContent = currentContent;
+      }
+    }
+  }, 2000);
+});
