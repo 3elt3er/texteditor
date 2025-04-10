@@ -52,6 +52,16 @@ let debounceTimer = null;
 let lastInputTime = Date.now();
 let lastSentContent = quill.root.innerHTML;
 
+window.addEventListener("message", function(e) {
+  if (e.data && e.data.content) {
+    console.log("Получено сообщение из родителя:", e.data.content);
+    const quillRoot = document.querySelector(".ql-editor");
+    if (quillRoot) {
+      quillRoot.innerHTML = e.data.content;
+    }
+  }
+});
+
 quill.on('text-change', () => {
   lastInputTime = Date.now();
 
