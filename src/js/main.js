@@ -54,9 +54,9 @@ let lastSentContent = quill.root.innerHTML;
 
 window.addEventListener("message", function(e) {
   if (e.data && e.data.content) {
-    console.log("Получено сообщение из родителя:", e.data.content);
     const quillRoot = document.querySelector(".ql-editor");
-    if (quillRoot) {
+    if (quillRoot && quillRoot.innerHTML !== e.data.content) {
+      console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", e.data.content);
       quillRoot.innerHTML = e.data.content;
     }
   }
