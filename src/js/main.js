@@ -62,6 +62,14 @@ window.addEventListener("message", function(e) {
   }
 });
 
+window.addEventListener("message", function(e) {
+  if (e.data && e.data.action === "restoreFocus") {
+    quill.focus();
+    let len = quill.getLength();
+    quill.setSelection(len, 0);
+  }
+}); 
+
 quill.on('text-change', () => {
   lastInputTime = Date.now();
 
@@ -83,3 +91,13 @@ quill.on('text-change', () => {
     }
   }, 2000);
 });
+
+// quill.root.addEventListener('blur', () => {
+//   const currentContent = quill.root.innerHTML;
+//   console.log(currentContent)
+
+//   if (currentContent !== lastSentContent) {
+//     sendDataToMaximo();
+//     lastSentContent = currentContent;
+//   }
+// });

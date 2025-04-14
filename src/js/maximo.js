@@ -6,5 +6,5 @@ export const sendDataToMaximo = () => {
         { action: "updateDescription", content: contentWithInline },
         "*"
     );
-    console.log(contentWithInline); // теперь будет только "чистый" контент
+    console.log(contentWithInline);
 };
