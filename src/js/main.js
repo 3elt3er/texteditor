@@ -53,14 +53,17 @@ let lastInputTime = Date.now();
 let lastSentContent = quill.root.innerHTML;
 
 window.addEventListener("message", function(e) {
-  if (e.data && e.data.content) {
-    const quillRoot = document.querySelector(".ql-editor");
-    if (quillRoot && quillRoot.innerHTML !== e.data.content) {
-      console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", e.data.content);
-      quillRoot.innerHTML = e.data.content;
+  setTimeout(() => {
+    if (e.data && e.data.content) {
+      const quillRoot = document.querySelector(".ql-editor");
+      if (quillRoot && quillRoot.innerHTML !== e.data.content) {
+        console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", e.data.content);
+        quillRoot.innerHTML = e.data.content;
+        console.log(e.data.content)
+      }
     }
-  }
-});
+  }, 4000)
+}, { once: true });
 
 window.addEventListener("message", function(e) {
   if (e.data && e.data.action === "restoreFocus") {

@@ -6,5 +6,5 @@ export const sendDataToMaximo = () => {
         { action: "updateDescription", content: contentWithInline },
         "*"
     );
-    console.log('[IFRAME]', contentWithInline);
+    console.log('[IFRAME] Отправлено в Maximo', contentWithInline );
 };
