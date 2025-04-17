@@ -71,9 +71,9 @@ export const inlineStyles = (quillRoot) => {
     table.style.width = "100%";
     table.style.borderCollapse = "collapse";
     table.style.tableLayout = "fixed";
-    if (!table.style.border) {
-      table.style.border = "1px solid #000";
-    }
+    // if (!table.style.border) {
+    //   table.style.border = "1px solid #000";
+    // }
   });
   clone.querySelectorAll("td, th").forEach(cell => {
     if (!cell.style.border) {
@@ -178,4 +178,16 @@ function findClosestList(el) {
     el = el.parentElement;
   }
   return el;
+}
+
+export const applyChildStylesToListItems = (rootElement) => {
+  rootElement.querySelectorAll("li[data-list]").forEach(li => {
+    const firstChild = Array.from(li.children).find(ch =>
+      ch.style && (ch.style.fontSize || ch.style.color || ch.style.fontFamily)
+    );
+    if (firstChild) {
+      if (firstChild.style.fontSize)   li.style.fontSize   = firstChild.style.fontSize;
+      if (firstChild.style.color)      li.style.color      = firstChild.style.color;
+    }
+  });
 }

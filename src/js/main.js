@@ -3,6 +3,7 @@ import Widget from "quill-table-widget";
 import ImageResize from "quill-image-resize";
 import { setupTableFunctions, setupDropDownLocalization } from "./table.js";
 import { sendDataToMaximo } from "./maximo.js";
+import { applyChildStylesToListItems } from "./styleinliner.js"; 
 
 // Настройки Quill
 let SizeStyle = Quill.import("attributors/style/size");
@@ -35,6 +36,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 let activeCell = null;
+let lastCursorPosition = null;
+
+// Сохраняем позицию курсора перед потерей фокуса
+quill.on('selection-change', (range) => {
+  if (range) {
+    lastCursorPosition = range;
+  }
+});
 
 document.addEventListener("click", (event) => {
     if (event.target.tagName === "TD") {
@@ -47,11 +56,6 @@ document.addEventListener("click", (event) => {
 // Функция для получения активной ячейки
 export const getActiveCell = () => activeCell;
 
-
-let debounceTimer = null;
-let lastInputTime = Date.now();
-let lastSentContent = quill.root.innerHTML;
-
 window.addEventListener("message", function(e) {
   if (e.data && e.data.content) {
     const quillRoot = document.querySelector(".ql-editor");
@@ -60,49 +64,66 @@ window.addEventListener("message", function(e) {
     const quillContent = match ? match[1] : e.data.content;
 
     if (quillRoot && quillRoot.innerHTML !== quillContent) {
-      console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", quillContent);
-      quillRoot.innerHTML = quillContent;
-      lastSentContent = quill.root.innerHTML;
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = quillContent;
+
+      applyChildStylesToListItems(tempDiv);
+      console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", tempDiv.innerHTML);
+      quillRoot.innerHTML = tempDiv.innerHTML;
+
+      lastSentContent = quillRoot.innerHTML;
     }
   }
 }, { once: true });
 
+
 window.addEventListener("message", function(e) {
   if (e.data && e.data.action === "restoreFocus") {
-    quill.focus();
-    let len = quill.getLength();
-    quill.setSelection(len, 0);
-  }
-}); 
-
-quill.on('text-change', () => {
-  lastInputTime = Date.now();
-
-  if (debounceTimer) {
-    clearTimeout(debounceTimer);
-  }
-
-  debounceTimer = setTimeout(() => {
-    const now = Date.now();
-    const timeSinceLastInput = now - lastInputTime;
-
-    if (timeSinceLastInput >= 2000) {
-      const currentContent = quill.root.innerHTML;
-
-      if (currentContent !== lastSentContent) {
-        sendDataToMaximo();
-        lastSentContent = currentContent;
-      }
+    if (lastCursorPosition) {
+      quill.focus();
+      quill.setSelection(lastCursorPosition.index, lastCursorPosition.length || 0);
+    } else {
+      quill.focus();
+      const len = quill.getLength();
+      quill.setSelection(len, 0);
     }
-  }, 2000);
+  }
 });
 
-// quill.root.addEventListener('blur', () => {
-//   const currentContent = quill.root.innerHTML;
-//   console.log(currentContent)
+let debounceTimer = null;
+let isDirty = false;
+let lastSentContent = getCurrentContent();
 
-//   if (currentContent !== lastSentContent) {
-//     sendDataToMaximo();
-//     lastSentContent = currentContent;
-//   }
-// });
+const editorContainer = document.getElementById('editorWindow');
+
+function getCurrentContent() {
+  return quill.root.innerHTML.trim();
+}
+
+function save() {
+  const currentContent = getCurrentContent();
+  if (!isDirty) return;
+  if (currentContent === lastSentContent) return;
+
+  sendDataToMaximo();
+  lastSentContent = currentContent;
+  isDirty = false;
+}
+
+quill.on('text-change', () => {
+  isDirty = true;
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => save(), 5000);
+
+  const range = quill.getSelection();
+  if (range) {
+    lastCursorPosition = range;
+  }
+});
+
+editorContainer.addEventListener('mouseleave', (e) => {
+  const related = e.relatedTarget || e.toElement;
+  if (!editorContainer.contains(related)) {
+    save();
+  }
+});
