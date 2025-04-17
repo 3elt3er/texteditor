@@ -1,19 +1,21 @@
 export const inlineStyles = (quillRoot) => {
-  // 1. Получаем редактор из заданного корневого элемента
+  // Получаем редактор
   const editor = quillRoot.querySelector(".ql-editor");
   if (!editor) return "";
-
-  // 2. Клонируем содержимое редактора (чтобы не менять оригинал)
+  
+  // Сохраняем оригинальный контент редактора для нативного представления
+  const originalContent = editor.innerHTML;
+  
+  // Клонируем содержимое редактора, чтобы не менять оригинал
   const clone = editor.cloneNode(true);
-
-  // 3. Mapping для шрифтов
+  
   const fontMapping = {
     "arial": "Arial, Helvetica, sans-serif",
     "times-new-roman": "\"Times New Roman\", Times, serif",
     "courier-new": "\"Courier New\", Courier, monospace",
     "pt-mono": "\"PT Mono\", monospace"
   };
-
+  
   // Этап 1: Обходим все элементы и заменяем классы на inline-стили или data-атрибуты
   clone.querySelectorAll("*").forEach(el => {
     const classes = Array.from(el.classList);
@@ -31,7 +33,6 @@ export const inlineStyles = (quillRoot) => {
         el.classList.remove(cls);
       }
       if (cls.startsWith("ql-indent-")) {
-        // Сохраняем уровень отступа во data-indent и удаляем класс
         const level = parseInt(cls.split("-")[2], 10) || 0;
         el.setAttribute("data-indent", level);
         el.classList.remove(cls);
@@ -45,16 +46,18 @@ export const inlineStyles = (quillRoot) => {
       el.setAttribute("data-indent", "0");
     }
   });
-
+  
   // Этап 2: Устанавливаем дефолтный шрифт для всех элементов, если inline-шрифт не задан
-  const defaultFontKey = document.querySelector(".ql-font option[selected]")?.value || "arial";
-  const defaultFontFamily = fontMapping[defaultFontKey] || "Arial, Helvetica, sans-serif";
+  const defaultFontKey =
+    document.querySelector(".ql-font option[selected]")?.value || "arial";
+  const defaultFontFamily =
+    fontMapping[defaultFontKey] || "Arial, Helvetica, sans-serif";
   clone.querySelectorAll("*").forEach(el => {
     if (!el.style.fontFamily || el.style.fontFamily.trim() === "") {
       el.style.fontFamily = defaultFontFamily;
     }
   });
-
+  
   // Этап 3: Удаляем служебные атрибуты и пустые class'ы
   clone.querySelectorAll("[data-row]").forEach(el => el.removeAttribute("data-row"));
   clone.querySelectorAll("*").forEach(el => {
@@ -62,7 +65,7 @@ export const inlineStyles = (quillRoot) => {
       el.removeAttribute("class");
     }
   });
-
+  
   // Этап 4: Применяем inline-стили для таблиц
   clone.querySelectorAll("table").forEach(table => {
     table.style.width = "100%";
@@ -79,25 +82,42 @@ export const inlineStyles = (quillRoot) => {
     cell.style.wordWrap = "break-word";
     cell.style.padding = "2px 5px";
   });
-
+  
   // Этап 5: Применяем inline-отступы для элементов с data-indent
   clone.querySelectorAll("[data-indent]").forEach(el => {
     const level = parseInt(el.getAttribute("data-indent"), 10) || 0;
     el.style.paddingLeft = `${level * 39}px`;
   });
-
-  // Этап 6: Удаляем служебные теги, например невидимые <span>
+  
+  // Этап 6: Удаляем служебные теги, например невидимые span
   clone.querySelectorAll("span[contenteditable='false']").forEach(el => el.remove());
-
-  // Этап 7: Преобразуем списки (ordered и bullet) только если в клоне нет таблиц (т.е. для обычного текста)
+  
+  // Этап 7: Преобразуем списки (ordered и bullet) только для элементов вне таблиц
   if (!clone.querySelector("table")) {
     transformLists(clone);
   }
+  
+  
+
+  clone.querySelectorAll("li[data-list]").forEach(li => {
+    const firstChild = Array.from(li.children).find(ch =>
+      ch.style && (ch.style.fontSize || ch.style.color || ch.style.fontFamily)
+    );
+    if (firstChild) {
+      if (firstChild.style.fontSize)   li.style.fontSize   = firstChild.style.fontSize;
+      if (firstChild.style.color)      li.style.color      = firstChild.style.color;
+      if (firstChild.style.fontFamily) li.style.fontFamily = firstChild.style.fontFamily;
+    }
+  });
 
   // Этап 8: Удаляем оставшиеся data-indent атрибуты
   clone.querySelectorAll("[data-indent]").forEach(el => el.removeAttribute("data-indent"));
-
-  return clone.innerHTML;
+  
+  // Возвращаем комбинированный контент:
+  // - Блок для BIRT с инлайн-стилями (inlineContent) 
+  // - Блок для Quill с оригинальной разметкой (originalContent)
+  const inlineContent = clone.innerHTML;
+  return `<!--BIRT_START-->${inlineContent}<!--BIRT_END--><!--QUILL_START-->${originalContent}<!--QUILL_END-->`;
 };
 
 function transformLists(root) {
@@ -106,19 +126,18 @@ function transformLists(root) {
 }
 
 function handleList(root, listType) {
-  // Отбираем только те LI, которые не находятся внутри таблиц
   const lis = Array.from(root.querySelectorAll(`li[data-list='${listType}']`))
     .filter(li => !li.closest("table"));
   if (!lis.length) return;
   const isOrdered = listType === "ordered";
   const newList = document.createElement(isOrdered ? "ol" : "ul");
   const stack = [{ level: 0, list: newList }];
-
+  
   const getIndent = li => {
     const indent = li.getAttribute("data-indent");
     return indent ? parseInt(indent, 10) : 0;
   };
-
+  
   lis.forEach(li => {
     const level = getIndent(li);
     if (level > stack[stack.length - 1].level) {
@@ -145,7 +164,7 @@ function handleList(root, listType) {
       stack[stack.length - 1].list.appendChild(li);
     }
   });
-
+  
   const origList = findClosestList(lis[0]);
   if (origList && origList.parentNode) {
     origList.parentNode.replaceChild(newList, origList);

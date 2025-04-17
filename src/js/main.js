@@ -53,16 +53,18 @@ let lastInputTime = Date.now();
 let lastSentContent = quill.root.innerHTML;
 
 window.addEventListener("message", function(e) {
-  setTimeout(() => {
-    if (e.data && e.data.content) {
-      const quillRoot = document.querySelector(".ql-editor");
-      if (quillRoot && quillRoot.innerHTML !== e.data.content) {
-        console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", e.data.content);
-        quillRoot.innerHTML = e.data.content;
-        console.log(e.data.content)
-      }
+  if (e.data && e.data.content) {
+    const quillRoot = document.querySelector(".ql-editor");
+
+    const match = e.data.content.match(/<!--QUILL_START-->([\s\S]*?)<!--QUILL_END-->/);
+    const quillContent = match ? match[1] : e.data.content;
+
+    if (quillRoot && quillRoot.innerHTML !== quillContent) {
+      console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", quillContent);
+      quillRoot.innerHTML = quillContent;
+      lastSentContent = quill.root.innerHTML;
     }
-  }, 4000)
+  }
 }, { once: true });
 
 window.addEventListener("message", function(e) {
