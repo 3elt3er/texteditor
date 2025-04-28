@@ -71,9 +71,6 @@ export const inlineStyles = (quillRoot) => {
     table.style.width = "100%";
     table.style.borderCollapse = "collapse";
     table.style.tableLayout = "fixed";
-    // if (!table.style.border) {
-    //   table.style.border = "1px solid #000";
-    // }
   });
   clone.querySelectorAll("td, th").forEach(cell => {
     if (!cell.style.border) {
@@ -92,11 +89,12 @@ export const inlineStyles = (quillRoot) => {
   // Этап 6: Удаляем служебные теги, например невидимые span
   clone.querySelectorAll("span[contenteditable='false']").forEach(el => el.remove());
   
-  // Этап 7: Преобразуем списки (ordered и bullet)
+  // Этап 7: Удаляем ячейки, помеченные как объединенные, чтобы BIRT корректно отобразил colspan/rowspan
+  clone.querySelectorAll("td[data-merged],th[data-merged]").forEach(el => el.remove());
+  
+  // Этап 8: Преобразуем списки (ordered и bullet)
   transformLists(clone);
   
-  
-
   clone.querySelectorAll("li[data-list]").forEach(li => {
     const firstChild = Array.from(li.children).find(ch =>
       ch.style && (ch.style.fontSize || ch.style.color || ch.style.fontFamily)
@@ -108,12 +106,10 @@ export const inlineStyles = (quillRoot) => {
     }
   });
 
-  // Этап 8: Удаляем оставшиеся data-indent атрибуты
+  // Этап 9: Удаляем оставшиеся data-indent атрибуты
   clone.querySelectorAll("[data-indent]").forEach(el => el.removeAttribute("data-indent"));
   
   // Возвращаем комбинированный контент:
-  // - Блок для BIRT с инлайн-стилями (inlineContent) 
-  // - Блок для Quill с оригинальной разметкой (originalContent)
   const inlineContent = clone.innerHTML;
   return `<!--BIRT_START--><div style="text-indent:0">${inlineContent}</div><!--BIRT_END--><!--QUILL_START--><div style="display:none">${originalContent}</div><!--QUILL_END-->`;
 };
