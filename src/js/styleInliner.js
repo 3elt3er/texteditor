@@ -92,10 +92,8 @@ export const inlineStyles = (quillRoot) => {
   // Этап 6: Удаляем служебные теги, например невидимые span
   clone.querySelectorAll("span[contenteditable='false']").forEach(el => el.remove());
   
-  // Этап 7: Преобразуем списки (ordered и bullet) только для элементов вне таблиц
-  if (!clone.querySelector("table")) {
-    transformLists(clone);
-  }
+  // Этап 7: Преобразуем списки (ordered и bullet)
+  transformLists(clone);
   
   
 
@@ -117,7 +115,7 @@ export const inlineStyles = (quillRoot) => {
   // - Блок для BIRT с инлайн-стилями (inlineContent) 
   // - Блок для Quill с оригинальной разметкой (originalContent)
   const inlineContent = clone.innerHTML;
-  return `<!--BIRT_START-->${inlineContent}<!--BIRT_END--><!--QUILL_START-->${originalContent}<!--QUILL_END-->`;
+  return `<!--BIRT_START--><div style="text-indent:0">${inlineContent}</div><!--BIRT_END--><!--QUILL_START--><div style="display:none">${originalContent}</div><!--QUILL_END-->`;
 };
 
 function transformLists(root) {

@@ -25,7 +25,7 @@ const quill = new Quill("#editor", {
         toolbar: "#toolbar",
         imageResize: {
             displayStyles: { backgroundColor: "black", border: "none", color: "white" },
-            modules: ["Resize", "DisplaySize", "Toolbar"]
+            modules: ["Resize", "DisplaySize"]
         }
     }
 });
@@ -60,12 +60,9 @@ window.addEventListener("message", function(e) {
   if (e.data && e.data.content) {
     const quillRoot = document.querySelector(".ql-editor");
 
-    const match = e.data.content.match(/<!--QUILL_START-->([\s\S]*?)<!--QUILL_END-->/);
-    const quillContent = match ? match[1] : e.data.content;
-
-    if (quillRoot && quillRoot.innerHTML !== quillContent) {
+    if (quillRoot && quillRoot.innerHTML !== e.data.content) {
       const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = quillContent;
+      tempDiv.innerHTML = e.data.content;
 
       applyChildStylesToListItems(tempDiv);
       console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", tempDiv.innerHTML);
