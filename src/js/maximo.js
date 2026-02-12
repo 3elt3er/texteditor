@@ -1,12 +1,15 @@
-import { inlineStyles } from "./styleinliner";
+import { inlineStyles } from "./styleInliner.js";
 
 export const sendDataToMaximo = () => {
-  const combinedContent = inlineStyles(document.querySelector("#editor"));
+  const root = document.querySelector("#editor");
+  const { quillHtml, printHtml } = inlineStyles(root);
 
   window.parent.postMessage(
-    { action: "updateDescription", content: combinedContent },
+    {
+      action: "updateDescription",
+      quill: quillHtml,
+      print: printHtml
+    },
     "*"
   );
-
-  console.log("[IFRAME] Отправлено в Maximo:", combinedContent);
 };

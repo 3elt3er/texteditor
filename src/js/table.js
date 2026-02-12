@@ -65,7 +65,7 @@ const mergeCells = (direction, quillInstance) => {
     targetCell.style.display = "none";
     targetCell.dataset.merged = "true";
 
-    sendDataToMaximo(quillInstance.root.innerHTML);
+    sendDataToMaximo();
 };
 
 const splitCell = (quillInstance) => {
@@ -94,7 +94,7 @@ const splitCell = (quillInstance) => {
     activeCell.colSpan = 1;
     activeCell.rowSpan = 1;
 
-    sendDataToMaximo(quillInstance.root.innerHTML);
+    sendDataToMaximo();
 };
 
 const createButton = (text, action) => {
@@ -112,7 +112,7 @@ const changeBorderWidth = (arg, quillInstance) => {
     if (arg === -1 && borderWidth > 0) borderWidth--;
 
     updateTableBorders();
-    sendDataToMaximo(quillInstance.root.innerHTML);
+    sendDataToMaximo();
 };
 
 const updateTableBorders = () => {

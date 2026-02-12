@@ -1,9 +1,10 @@
+import "quill/dist/quill.snow.css";
 import Quill from "quill";
 import Widget from "quill-table-widget";
 import ImageResize from "quill-image-resize";
 import { setupTableFunctions, setupDropDownLocalization } from "./table.js";
 import { sendDataToMaximo } from "./maximo.js";
-import { applyChildStylesToListItems } from "./styleinliner.js"; 
+import { applyChildStylesToListItems } from "./styleInliner.js";
 
 // Настройки Quill
 let SizeStyle = Quill.import("attributors/style/size");
@@ -57,19 +58,23 @@ document.addEventListener("click", (event) => {
 export const getActiveCell = () => activeCell;
 
 window.addEventListener("message", function(e) {
-  if (e.data && e.data.content) {
-    const quillRoot = document.querySelector(".ql-editor");
+  const incomingQuillHtml = typeof e.data?.quill === "string"
+    ? e.data.quill
+    : typeof e.data?.content === "string"
+      ? e.data.content
+      : null;
+  if (!incomingQuillHtml) return;
 
-    if (quillRoot && quillRoot.innerHTML !== e.data.content) {
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = e.data.content;
+  const quillRoot = document.querySelector(".ql-editor");
+  if (quillRoot && quillRoot.innerHTML !== incomingQuillHtml) {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = incomingQuillHtml;
 
-      applyChildStylesToListItems(tempDiv);
-      console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", tempDiv.innerHTML);
-      quillRoot.innerHTML = tempDiv.innerHTML;
+    applyChildStylesToListItems(tempDiv);
+    console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", tempDiv.innerHTML);
+    quillRoot.innerHTML = tempDiv.innerHTML;
 
-      lastSentContent = quillRoot.innerHTML;
-    }
+    lastSentContent = quillRoot.innerHTML;
   }
 }, { once: true });
 

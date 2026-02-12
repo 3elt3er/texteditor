@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'war'
+}
+
+group = 'com.maximo.editor'
+version = '1.0.0'
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+}
+
+task buildFrontend(type: Exec) {
+    workingDir "$projectDir"
+    commandLine "cmd", "/c", "npm run build"
+}
+
+tasks.war.dependsOn buildFrontend
+
+war {
+    archiveFileName = "maximo-editor.war"
+
+    from('dist') {
+        into ''
+    }
+
+    from('src/main/webapp/WEB-INF') {
+        into 'WEB-INF'
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
