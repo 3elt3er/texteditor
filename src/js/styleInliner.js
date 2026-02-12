@@ -70,6 +70,12 @@ export const inlineStyles = (quillRoot) => {
     cell.style.padding = "2px 5px";
   });
 
+  clone.querySelectorAll("img").forEach(img => {
+    img.style.maxWidth = "1200px";
+    img.style.width = "auto";
+    img.style.height = "auto";
+  });
+
   clone.querySelectorAll("[data-indent]").forEach(el => {
     const level = parseInt(el.getAttribute("data-indent"), 10) || 0;
     el.style.paddingLeft = `${level * 39}px`;
