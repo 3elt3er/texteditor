@@ -71,9 +71,14 @@ export const inlineStyles = (quillRoot) => {
   });
 
   clone.querySelectorAll("img").forEach(img => {
-    img.style.maxWidth = "1200px";
+    img.style.maxWidth = "640px";
     img.style.width = "auto";
     img.style.height = "auto";
+  });
+
+  clone.querySelectorAll("p").forEach(p => {
+    p.style.margin = "0";
+    p.style.padding = "0";
   });
 
   clone.querySelectorAll("[data-indent]").forEach(el => {

@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import path from "path";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -11,4 +11,5 @@ const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, "dist")));
 
-app.listen(3000, () => console.log("✅ Maximo-редактор запущен на http://localhost:3000"));
+app.listen(3000);
+

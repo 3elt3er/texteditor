@@ -9,8 +9,6 @@ export const sendDataToMaximo = () => {
     print: printHtml
   };
 
-  console.log("[IFRAME->MAXIMO] payload:", payload);
-
   window.parent.postMessage(
     payload,
     "*"

@@ -6,7 +6,6 @@ import { setupTableFunctions, setupDropDownLocalization } from "./table.js";
 import { sendDataToMaximo } from "./maximo.js";
 import { applyChildStylesToListItems } from "./styleInliner.js";
 
-// Настройки Quill
 let SizeStyle = Quill.import("attributors/style/size");
 SizeStyle.whitelist = ["8px", "10px", "12px", "14px", "16px", "18px", "24px", "36px", "48px", "72px", "100px"];
 
@@ -76,7 +75,7 @@ const enforceImageWidthLimit = (root = quill.root) => {
       img.style.height = "auto";
       return;
     }
-    img.style.maxWidth = "1200px";
+    img.style.maxWidth = "640px";
     img.style.height = "auto";
   });
 };
@@ -91,11 +90,6 @@ const IMAGE_COMPRESSION_OPTIONS = {
 const EDITOR_TOTAL_CHARS_LIMIT = 450_000;
 
 const dataUrlBase64Chars = (dataUrl) => (dataUrl.split(",")[1] || "").length;
-
-const dataUrlSizeBytes = (dataUrl) => {
-  const base64Chars = dataUrlBase64Chars(dataUrl);
-  return Math.ceil((base64Chars * 3) / 4);
-};
 
 const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
@@ -115,8 +109,7 @@ const loadImageElementFromSrc = (src) => new Promise((resolve, reject) => {
 
 const encodeLossyImageCandidates = (canvas, quality) => {
   const jpeg = canvas.toDataURL("image/jpeg", quality);
-  const webp = canvas.toDataURL("image/webp", quality);
-  return [jpeg, webp];
+  return [jpeg];
 };
 
 const compressLoadedImageToDataUrl = async (img, options = IMAGE_COMPRESSION_OPTIONS) => {
@@ -239,21 +232,15 @@ const insertImageDataUrl = (dataUrl, options = {}) => {
 const insertCompressedImages = async (files) => {
   for (const file of files) {
     const compressedResult = await compressImageToDataUrl(file);
-    const { dataUrl, compressionMode, initialBase64Chars, finalBase64Chars, visualMaxWidth } = compressedResult;
+    const { dataUrl, visualMaxWidth } = compressedResult;
 
     const currentContentChars = getCurrentContent().length;
     const projectedTotalChars = currentContentChars + dataUrl.length;
     if (projectedTotalChars > EDITOR_TOTAL_CHARS_LIMIT) {
       showEditorWarning("Слишком большой объем данных. Вставьте изображение в следующий раздел");
-      console.warn(
-        `[IMAGE] ${file.name || "clipboard-image"} skipped: editorChars=${currentContentChars}, imageChars=${dataUrl.length}, projected=${projectedTotalChars}, limit=${EDITOR_TOTAL_CHARS_LIMIT}`
-      );
       continue;
     }
 
-    console.log(
-      `[IMAGE] ${file.name || "clipboard-image"}: ${Math.round(file.size / 1024)}KB -> ${Math.round(dataUrlSizeBytes(dataUrl) / 1024)}KB, base64Chars=${finalBase64Chars}, mode=${compressionMode}, beforeQualityCheck=${initialBase64Chars}`
-    );
     insertImageDataUrl(dataUrl, { visualMaxWidth });
   }
 };
@@ -273,8 +260,8 @@ if (toolbar) {
     if (!file) return;
     try {
       await insertCompressedImages([file]);
-    } catch (error) {
-      console.error("[IMAGE] button insert failed:", error);
+    } catch {
+      showEditorWarning("Не удалось вставить изображение");
     }
   });
 }
@@ -296,8 +283,8 @@ quill.root.addEventListener("paste", async (event) => {
   event.stopImmediatePropagation();
   try {
     await insertCompressedImages([imageFile]);
-  } catch (error) {
-    console.error("[IMAGE] paste failed:", error);
+  } catch {
+    showEditorWarning("Не удалось вставить изображение из буфера обмена");
   }
 }, true);
 
@@ -311,8 +298,8 @@ quill.root.addEventListener("drop", async (event) => {
   event.stopPropagation();
   try {
     await insertCompressedImages(imageFiles);
-  } catch (error) {
-    console.error("[IMAGE] drop failed:", error);
+  } catch {
+    showEditorWarning("Не удалось вставить изображение перетаскиванием");
   }
 }, true);
 
@@ -326,7 +313,6 @@ document.addEventListener("DOMContentLoaded", () => {
 let activeCell = null;
 let lastCursorPosition = null;
 
-// Сохраняем позицию курсора перед потерей фокуса
 quill.on('selection-change', (range) => {
   if (range) {
     lastCursorPosition = range;
@@ -341,7 +327,6 @@ document.addEventListener("click", (event) => {
     }
 });
 
-// Функция для получения активной ячейки
 export const getActiveCell = () => activeCell;
 
 window.addEventListener("message", function(e) {
@@ -358,7 +343,6 @@ window.addEventListener("message", function(e) {
     tempDiv.innerHTML = incomingQuillHtml;
 
     applyChildStylesToListItems(tempDiv);
-    console.log("[IFRAME] Получено предыдущее сообщение из окна Maximo:", tempDiv.innerHTML);
     quillRoot.innerHTML = tempDiv.innerHTML;
     enforceImageWidthLimit(quillRoot);
 
@@ -429,20 +413,11 @@ function save() {
   isDirty = false;
 }
 
-quill.on('text-change', (delta) => {
+quill.on('text-change', () => {
   isDirty = true;
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => save(), 5000);
 
-  const insertedImages = (delta?.ops || [])
-    .map((op) => op?.insert?.image)
-    .filter(Boolean);
-  insertedImages.forEach((imageSrc, idx) => {
-    const base64Chars = imageSrc.startsWith("data:")
-      ? dataUrlBase64Chars(imageSrc)
-      : imageSrc.length;
-    console.log(`[IMAGE] inserted #${idx + 1}: base64Chars=${base64Chars}`);
-  });
   enforceImageWidthLimit();
 
   const range = quill.getSelection();
