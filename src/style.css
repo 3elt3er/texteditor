@@ -30,12 +30,6 @@
 .ql-font-times-new-roman {
     font-family: "Times New Roman", Times, serif;
 }
-.ql-font-courier-new {
-    font-family: "Courier New", Courier, monospace;
-}
-.ql-font-pt-mono {
-    font-family: "PT Mono", monospace;
-}
 
 #wi-tooltip-header {
     display: none !important;

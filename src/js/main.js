@@ -7,10 +7,10 @@ import { sendDataToMaximo } from "./maximo.js";
 import { applyChildStylesToListItems } from "./styleInliner.js";
 
 let SizeStyle = Quill.import("attributors/style/size");
-SizeStyle.whitelist = ["8px", "10px", "12px", "14px", "16px", "18px", "24px", "36px", "48px", "72px", "100px"];
+SizeStyle.whitelist = ["8px", "10px", "12px", "14px", "16px", "18px", "24px", "36px", "48px", "72px"];
 
 const Font = Quill.import("attributors/class/font");
-Font.whitelist = ["arial", "times-new-roman", "courier-new", "pt-mono"];
+Font.whitelist = ["arial", "times-new-roman"];
 
 Quill.register(Font, true);
 Quill.register("modules/tableWidget", Widget);
@@ -69,12 +69,18 @@ document.addEventListener("keyup", (event) => {
 
 const enforceImageWidthLimit = (root = quill.root) => {
   root.querySelectorAll("img").forEach((img) => {
+    const styleWidth = parseInt(img.style.width, 10) || 0;
+    const attributeWidth = parseInt(img.getAttribute("width"), 10) || 0;
     const visualMaxWidth = Number(img.dataset.visualMaxWidth || 0);
-    if (visualMaxWidth > 0) {
-      img.style.maxWidth = `${visualMaxWidth}px`;
-      img.style.height = "auto";
-      return;
+
+    const currentWidth = attributeWidth || styleWidth || visualMaxWidth;
+    if (styleWidth > 0) {
+      img.style.width = "";
     }
+    if (currentWidth > 0) {
+      img.width = Math.min(currentWidth, 640);
+    }
+
     img.style.maxWidth = "640px";
     img.style.height = "auto";
   });
@@ -132,7 +138,8 @@ const compressLoadedImageToDataUrl = async (img, options = IMAGE_COMPRESSION_OPT
       dataUrl: losslessDataUrl,
       compressionMode: "resize_only",
       initialBase64Chars: losslessChars,
-      finalBase64Chars: losslessChars
+      finalBase64Chars: losslessChars,
+      renderedWidth: width
     };
   }
 
@@ -164,7 +171,8 @@ const compressLoadedImageToDataUrl = async (img, options = IMAGE_COMPRESSION_OPT
         dataUrl: bestUnderLimitAtThisQuality,
         compressionMode: "quality_reduced",
         initialBase64Chars: initialBestChars,
-        finalBase64Chars: bestUnderLimitChars
+        finalBase64Chars: bestUnderLimitChars,
+        renderedWidth: width
       };
     }
 
@@ -175,7 +183,8 @@ const compressLoadedImageToDataUrl = async (img, options = IMAGE_COMPRESSION_OPT
     dataUrl: bestDataUrl,
     compressionMode: "quality_reduced",
     initialBase64Chars: initialBestChars,
-    finalBase64Chars: bestChars
+    finalBase64Chars: bestChars,
+    renderedWidth: width
   };
 };
 
@@ -189,6 +198,7 @@ const compressImageToDataUrl = async (file, options = IMAGE_COMPRESSION_OPTIONS)
       compressionMode: "visual_resize_only",
       initialBase64Chars: dataUrlBase64Chars(originalDataUrlFastPath),
       finalBase64Chars: dataUrlBase64Chars(originalDataUrlFastPath),
+      renderedWidth: Math.min(imgFastPath.naturalWidth, options.maxWidth),
       visualMaxWidth: imgFastPath.naturalWidth > options.maxWidth ? options.maxWidth : null
     };
   }
@@ -203,6 +213,7 @@ const compressImageToDataUrl = async (file, options = IMAGE_COMPRESSION_OPTIONS)
       compressionMode: "visual_resize_only",
       initialBase64Chars: originalBase64Chars,
       finalBase64Chars: originalBase64Chars,
+      renderedWidth: Math.min(img.naturalWidth, options.maxWidth),
       visualMaxWidth: img.naturalWidth > options.maxWidth ? options.maxWidth : null
     };
   }
@@ -217,10 +228,14 @@ const insertImageDataUrl = (dataUrl, options = {}) => {
   const [leaf] = quill.getLeaf(index);
   const imageNode = leaf?.domNode;
   if (imageNode && imageNode.tagName === "IMG") {
+    if (options.renderedWidth) {
+      imageNode.width = Math.min(options.renderedWidth, 640);
+      imageNode.style.maxWidth = "640px";
+      imageNode.style.height = "auto";
+    }
+
     if (options.visualMaxWidth) {
       imageNode.dataset.visualMaxWidth = String(options.visualMaxWidth);
-      imageNode.style.maxWidth = `${options.visualMaxWidth}px`;
-      imageNode.style.height = "auto";
     } else {
       delete imageNode.dataset.visualMaxWidth;
     }
@@ -232,7 +247,7 @@ const insertImageDataUrl = (dataUrl, options = {}) => {
 const insertCompressedImages = async (files) => {
   for (const file of files) {
     const compressedResult = await compressImageToDataUrl(file);
-    const { dataUrl, visualMaxWidth } = compressedResult;
+    const { dataUrl, renderedWidth, visualMaxWidth } = compressedResult;
 
     const currentContentChars = getCurrentContent().length;
     const projectedTotalChars = currentContentChars + dataUrl.length;
@@ -241,7 +256,7 @@ const insertCompressedImages = async (files) => {
       continue;
     }
 
-    insertImageDataUrl(dataUrl, { visualMaxWidth });
+    insertImageDataUrl(dataUrl, { renderedWidth, visualMaxWidth });
   }
 };
 

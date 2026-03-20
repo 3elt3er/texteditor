@@ -8,9 +8,7 @@ export const inlineStyles = (quillRoot) => {
 
   const fontMapping = {
     "arial": "Arial, Helvetica, sans-serif",
-    "times-new-roman": "\"Times New Roman\", Times, serif",
-    "courier-new": "\"Courier New\", Courier, monospace",
-    "pt-mono": "\"PT Mono\", monospace"
+    "times-new-roman": "\"Times New Roman\", Times, serif"
   };
 
   clone.querySelectorAll("*").forEach(el => {
@@ -62,6 +60,7 @@ export const inlineStyles = (quillRoot) => {
     table.style.width = "100%";
     table.style.borderCollapse = "collapse";
     table.style.tableLayout = "fixed";
+    table.style.textIndent = "0";
   });
 
   clone.querySelectorAll("td, th").forEach(cell => {
@@ -71,6 +70,25 @@ export const inlineStyles = (quillRoot) => {
   });
 
   clone.querySelectorAll("img").forEach(img => {
+    const attributeWidth = parseInt(img.getAttribute("width"), 10) || 0;
+    const inlineWidth = parseInt(img.style.width, 10) || 0;
+    const currentWidth = attributeWidth || inlineWidth;
+    if (currentWidth > 0) {
+      const cappedWidth = Math.min(currentWidth, 640);
+      img.style.width = `${cappedWidth}px`;
+      img.style.maxWidth = "640px";
+      img.style.height = "auto";
+      return;
+    }
+
+    const visualMaxWidth = Number(img.dataset.visualMaxWidth || 0);
+    if (visualMaxWidth > 0) {
+      img.style.width = `${visualMaxWidth}px`;
+      img.style.maxWidth = "640px";
+      img.style.height = "auto";
+      return;
+    }
+
     img.style.maxWidth = "640px";
     img.style.width = "auto";
     img.style.height = "auto";
@@ -103,8 +121,9 @@ export const inlineStyles = (quillRoot) => {
   });
 
   clone.querySelectorAll("[data-indent]").forEach(el => el.removeAttribute("data-indent"));
+  inlineFirstTextBlock(clone);
 
-  const printHtml = `<div style="text-indent:0">${clone.innerHTML}</div>`;
+  const printHtml = clone.innerHTML;
 
   return { quillHtml, printHtml };
 };
@@ -168,6 +187,25 @@ function findClosestList(el) {
     el = el.parentElement;
   }
   return el;
+}
+
+function inlineFirstTextBlock(root) {
+  const firstElement = Array.from(root.children).find(el => {
+    if (el.tagName === "BR") return false;
+    if (["TABLE", "UL", "OL", "IMG"].includes(el.tagName)) return false;
+    if (el.querySelector("table, ul, ol, img")) return false;
+    return el.textContent.trim().length > 0;
+  });
+
+  if (!firstElement || firstElement.tagName === "SPAN") return;
+
+  const span = document.createElement("span");
+  Array.from(firstElement.attributes).forEach(attr => {
+    span.setAttribute(attr.name, attr.value);
+  });
+  span.innerHTML = firstElement.innerHTML;
+
+  firstElement.replaceWith(span);
 }
 
 export const applyChildStylesToListItems = (rootElement) => {
